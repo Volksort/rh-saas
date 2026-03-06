@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+ provider = "prisma-client-js"
+}
+
+datasource db {
+ provider = "postgresql"
+}
+
+model Company {
+ id          String @id @default(cuid())
+ name        String
+ createdAt   DateTime @default(now())
+
+ users       User[]
+ employees   Employee[]
+ departments Department[]
+}
+
+model User {
+ id        String @id @default(cuid())
+ name      String
+ email     String @unique
+ password  String
+ role      String
+
+ companyId String
+ company   Company @relation(fields: [companyId], references: [id])
+}
+
+model Department {
+ id        String @id @default(cuid())
+ name      String
+
+ companyId String
+ company   Company @relation(fields: [companyId], references: [id])
+
+ employees Employee[]
+}
+
+model Employee {
+ id           String @id @default(cuid())
+ name         String
+ email        String?
+ phone        String?
+ position     String
+ hireDate     DateTime
+ status       String
+ driveFolder  String?
+
+ companyId    String
+ company      Company @relation(fields: [companyId], references: [id])
+
+ departmentId String?
+ department   Department? @relation(fields: [departmentId], references: [id])
+
+ incidents    Incident[]
+ documents    Document[]
+}
+
+model Incident {
+ id          String @id @default(cuid())
+ type        String
+ description String
+ date        DateTime @default(now())
+
+ employeeId  String
+ employee    Employee @relation(fields: [employeeId], references: [id])
+}
+
+model Document {
+ id         String @id @default(cuid())
+ name       String
+ driveUrl   String
+ uploadedAt DateTime @default(now())
+
+ employeeId String
+ employee   Employee @relation(fields: [employeeId], references: [id])
+}
