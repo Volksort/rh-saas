@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
-import { Role } from '@prisma/client'  // ✅ Importar el enum Role
+// ❌ eliminado Role
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,12 +16,16 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email y contraseña requeridos')
         }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         })
+
         if (!user) throw new Error('Usuario no encontrado')
+
         const isValid = await bcrypt.compare(credentials.password, user.password)
         if (!isValid) throw new Error('Contraseña incorrecta')
+
         return {
           id: user.id,
           email: user.email,
@@ -32,6 +36,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -41,19 +46,22 @@ export const authOptions: NextAuthOptions = {
       }
       return token
     },
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role as Role   // ✅ Uso correcto
+        session.user.role = token.role as string   // ✅ FIX
         session.user.companyId = token.companyId as string
       }
       return session
     },
   },
+
   pages: {
     signIn: '/login',
     error: '/login',
   },
+
   session: { strategy: 'jwt' },
   secret: process.env.NEXTAUTH_SECRET,
 }
