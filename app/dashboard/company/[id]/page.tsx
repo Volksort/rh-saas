@@ -1,21 +1,19 @@
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import Link from "next/link"
+import CreateDepartmentModal from "@/components/CreateDepartmentModal"
 
-export default async function CompanyPage() {
+export default async function CompanyPage({
+  params
+}: {
+  params: Promise<{ id: string }>
+}) {
 
-  const session = await getServerSession(authOptions)
-
-  const companyId = session?.user?.companyId
-
-  if (!companyId) {
-    notFound()
-  }
+  const { id } = await params
 
   const company = await prisma.company.findUnique({
     where: {
-      id: companyId
+      id
     },
     include: {
       employees: {
@@ -41,9 +39,28 @@ export default async function CompanyPage() {
 
     <div className="p-10">
 
-      <h1 className="text-3xl font-bold mb-8">
-        {company.name}
-      </h1>
+      {/* HEADER */}
+
+      <div className="flex items-center justify-between mb-8">
+
+        <h1 className="text-3xl font-bold">
+          {company.name}
+        </h1>
+
+        <div className="flex gap-3">
+
+          <Link
+            href={`/dashboard/employees/${company.id}`}
+            className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition"
+          >
+            Ver empleados
+          </Link>
+
+          <CreateDepartmentModal companyId={company.id} />
+
+        </div>
+
+      </div>
 
       {/* STATS */}
 

@@ -1,25 +1,55 @@
 import { prisma } from "@/lib/prisma"
 
+export async function POST(req: Request) {
 
+  try {
 
-export async function POST(req: Request){
-  console.log(process.env.DATABASE_URL)
-  const data = await req.json()
+    const data = await req.json()
 
-  const company = await prisma.company.create({
-    data:{
-      name:data.name
+    let driveFolderId = null
+
+    if (data.driveUrl) {
+
+      const match = data.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/)
+
+      if (match) {
+        driveFolderId = match[1]
+      }
+
     }
-  })
 
-  return Response.json(company)
+    const company = await prisma.company.create({
+      data: {
+        name: data.name,
+        driveFolderUrl: data.driveUrl || null,
+        driveFolderId: driveFolderId
+      }
+    })
+
+    return Response.json(company)
+
+  } catch (error) {
+
+    console.log(error)
+
+    return Response.json(
+      {
+        error: "Error creando empresa"
+      },
+      {
+        status: 500
+      }
+    )
+
+  }
+
 }
 
-export async function GET(){
+export async function GET() {
 
-    const companies = await prisma.company.findMany({
-    include:{
-      employees:true
+  const companies = await prisma.company.findMany({
+    include: {
+      employees: true
     }
   })
 

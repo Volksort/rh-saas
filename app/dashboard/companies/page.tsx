@@ -3,45 +3,49 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
-export default function Companies(){
+export default function Companies() {
 
-  const [companies,setCompanies] = useState<any[]>([])
-  const [name,setName] = useState("")
-  const [showModal,setShowModal] = useState(false)
+  const [companies, setCompanies] = useState<any[]>([])
+  const [name, setName] = useState("")
+  const [driveUrl, setDriveUrl] = useState("")
+  const [showModal, setShowModal] = useState(false)
 
   const router = useRouter()
 
-  async function loadCompanies(){
+  async function loadCompanies() {
 
     const res = await fetch("/api/companies")
     const data = await res.json()
 
     setCompanies(data)
-
   }
 
-  useEffect(()=>{
+  useEffect(() => {
     loadCompanies()
-  },[])
+  }, [])
 
+  async function createCompany() {
 
-  async function createCompany(){
-
-    await fetch("/api/companies",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
+    await fetch("/api/companies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
-      body:JSON.stringify({ name })
+      body: JSON.stringify({
+        name,
+        driveUrl
+      })
     })
 
     setShowModal(false)
+
     setName("")
+    setDriveUrl("")
 
     loadCompanies()
   }
 
-  return(
+  return (
 
     <div className="p-10">
 
@@ -62,7 +66,7 @@ export default function Companies(){
             </h2>
 
             <button
-              onClick={()=>setShowModal(true)}
+              onClick={() => setShowModal(true)}
               className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 transition"
             >
               + Crear empresa
@@ -70,11 +74,10 @@ export default function Companies(){
 
           </div>
 
-
           <div className="bg-white rounded shadow">
 
-            {companies.map((company)=>(
-              
+            {companies.map((company) => (
+
               <div
                 key={company.id}
                 className="p-4 border-b flex justify-between items-center"
@@ -90,10 +93,22 @@ export default function Companies(){
                     {company.employees.length} empleados
                   </p>
 
+                  {company.driveFolderUrl && (
+
+                    <a
+                      href={company.driveFolderUrl}
+                      target="_blank"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Abrir carpeta Drive
+                    </a>
+
+                  )}
+
                 </div>
 
                 <button
-                  onClick={()=>router.push(`/dashboard/company/${company.id}`)}
+                  onClick={() => router.push(`/dashboard/company/${company.id}`)}
                   className="text-sm bg-gray-900 text-white px-3 py-1 rounded hover:bg-gray-700 transition"
                 >
                   Ver empresa
@@ -107,7 +122,6 @@ export default function Companies(){
 
         </div>
 
-
         {/* PANEL DERECHO */}
 
         <div>
@@ -120,12 +134,16 @@ export default function Companies(){
 
             <select className="border border-gray-300 p-2 w-full mb-6 rounded">
 
-              <option>Seleccionar empresa</option>
+              <option>
+                Seleccionar empresa
+              </option>
 
-              {companies.map((company)=>(
+              {companies.map((company) => (
+
                 <option key={company.id}>
                   {company.name}
                 </option>
+
               ))}
 
             </select>
@@ -139,7 +157,6 @@ export default function Companies(){
         </div>
 
       </div>
-
 
       {/* MODAL */}
 
@@ -157,13 +174,20 @@ export default function Companies(){
               placeholder="Nombre empresa"
               className="border border-gray-300 p-2 w-full mb-4 rounded"
               value={name}
-              onChange={(e)=>setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
+            />
+
+            <input
+              placeholder="URL carpeta Google Drive"
+              className="border border-gray-300 p-2 w-full mb-4 rounded"
+              value={driveUrl}
+              onChange={(e) => setDriveUrl(e.target.value)}
             />
 
             <div className="flex justify-end gap-3">
 
               <button
-                onClick={()=>setShowModal(false)}
+                onClick={() => setShowModal(false)}
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition"
               >
                 Cancelar
