@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { drive } from "@/lib/google"
 
 export async function POST(req: Request) {
 
@@ -6,24 +7,49 @@ export async function POST(req: Request) {
 
     const data = await req.json()
 
-    let driveFolderId = null
+    if (!data.name) {
 
-    if (data.driveUrl) {
-
-      const match = data.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/)
-
-      if (match) {
-        driveFolderId = match[1]
-      }
+      return Response.json(
+        { error: "Nombre requerido" },
+        { status: 400 }
+      )
 
     }
 
-    const company = await prisma.company.create({
-      data: {
+    // CREAR CARPETA EN DRIVE
+
+    const folder = await drive.files.create({
+
+      requestBody: {
+
         name: data.name,
-        driveFolderUrl: data.driveUrl || null,
-        driveFolderId: driveFolderId
+
+        mimeType: "application/vnd.google-apps.folder",
+
+        parents: [
+          process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID!
+        ]
+
+      },
+
+      fields: "id, webViewLink"
+
+    })
+
+    // CREAR EMPRESA EN DB
+
+    const company = await prisma.company.create({
+
+      data: {
+
+        name: data.name,
+
+        driveFolderId: folder.data.id!,
+
+        driveFolderUrl: folder.data.webViewLink!
+
       }
+
     })
 
     return Response.json(company)
@@ -48,10 +74,13 @@ export async function POST(req: Request) {
 export async function GET() {
 
   const companies = await prisma.company.findMany({
+
     include: {
       employees: true
     }
+
   })
 
   return Response.json(companies)
+
 }
