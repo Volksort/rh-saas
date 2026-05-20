@@ -1,20 +1,25 @@
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg' // Importa el adapter correcto
-import { Pool } from 'pg' // Necesitas instalar pg: npm install pg
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
+import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { Pool } from "pg"
 
 const connectionString = process.env.DATABASE_URL!
-const pool = new Pool({ connectionString })
+
+const pool = new Pool({
+  connectionString
+})
+
 const adapter = new PrismaPg(pool)
+
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient
+}
 
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    adapter,  // <-- ¡Esta es la línea clave que añadimos!
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    adapter
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma
+}

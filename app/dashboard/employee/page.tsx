@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import UploadDocument from "@/components/UploadDocument"
 
-export default async function EmployeePage({
+export default async function Employee({
   params
 }: {
   params: Promise<{ id: string }>

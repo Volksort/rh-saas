@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* En móvil ocupa toda la pantalla */
+@media (max-width: 640px) {
+  .modal-content {
+    width: 95vw;
+    margin: 1rem;
+  }
+}

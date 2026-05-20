@@ -107,27 +107,30 @@ model Incident {
 
 model Document {
 
-  id              String       @id @default(cuid())
+  id              String    @id @default(cuid())
 
   name            String
 
-  // GOOGLE DRIVE FILE
-
-  driveFileId     String?
-
-  driveUrl        String
-
-  // INE | RFC | CURP | CONTRATO | NOMINA
-
   type            String?
 
-  uploadedAt      DateTime     @default(now())
+  uploadedAt      DateTime?
 
   employeeId      String
 
-  employee        Employee     @relation(fields: [employeeId], references: [id])
-}
+  employee        Employee  @relation(fields: [employeeId], references: [id])
 
+  // ARCHIVO
+
+  driveFileId     String?
+
+  driveUrl        String?
+
+  fileName        String?
+
+  uploaded        Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+}
 enum Role {
   ADMIN
   COMPANY_ADMIN
