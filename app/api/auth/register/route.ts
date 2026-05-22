@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         companyId: companyId || DEFAULT_COMPANY_ID,
-        role: 'ADMIN',
+        role: 'COMPANY_ADMIN',
       },
     })
 
