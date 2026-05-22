@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma"
-import { drive } from "@/lib/google"
 
 export async function POST(req: Request) {
 
@@ -16,43 +15,9 @@ export async function POST(req: Request) {
 
     }
 
-    // CREAR CARPETA EN DRIVE
 
-    const folder = await drive.files.create({
 
-      requestBody: {
 
-        name: data.name,
-
-        mimeType: "application/vnd.google-apps.folder",
-
-        parents: [
-          process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID!
-        ]
-
-      },
-
-      fields: "id, webViewLink"
-
-    })
-
-    // CREAR EMPRESA EN DB
-
-    const company = await prisma.company.create({
-
-      data: {
-
-        name: data.name,
-
-        driveFolderId: folder.data.id!,
-
-        driveFolderUrl: folder.data.webViewLink!
-
-      }
-
-    })
-
-    return Response.json(company)
 
   } catch (error) {
 
