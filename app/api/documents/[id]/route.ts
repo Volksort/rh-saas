@@ -34,6 +34,15 @@ export async function DELETE(
 
     // Eliminar registro de la base de datos
     await prisma.document.delete({ where: { id } });
+    await prisma.activityLog.create({
+      data: {
+        action: "DELETE_DOCUMENT",
+        entityType: "DOCUMENT",
+        entityId: doc.id,
+        description: `Documento ${doc.name} eliminado`,
+        companyId: doc.employee.companyId,
+      },
+})
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,26 +1,26 @@
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/lib/prisma";
+import { createActivityLog } from "@/lib/activity-log";
 
 export async function POST(req: Request) {
 
-  const data = await req.json()
+  const data = await req.json();
 
   const department = await prisma.department.create({
     data: {
       name: data.name,
-      companyId: data.companyId
-    }
-  })
+      companyId: data.companyId,
+    },
+  });
 
-  return Response.json(department)
-}
+  await prisma.activityLog.create({
+      data: {
+        action: "CREATE_DEPARTMENT",
+        entityType: "DEPARTMENT",
+        entityId: department.id,
+        description: `Departamento ${department.name} creado`,
+        companyId: data.companyId,
+      },
+    })
 
-export async function GET() {
-
-  const departments = await prisma.department.findMany({
-    include:{
-      company:true
-    }
-  })
-
-  return Response.json(departments)
+  return Response.json(department);
 }

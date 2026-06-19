@@ -45,6 +45,15 @@ export async function PUT(req: NextRequest) {
         uploadedAt: new Date()
       }
     })
+    await prisma.activityLog.create({
+      data: {
+        action: "UPDATE_DOCUMENT",
+        entityType: "DOCUMENT",
+        entityId: documentId,
+        description: `Documento ${doc.name} actualizado `,
+        companyId: doc.employee.companyId,
+      },
+    })
 
     return Response.json({ success: true })
   } catch (error) {

@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import UploadDocument from "@/components/UploadDocument";
 import UpdateDocumentButton from "@/components/UpdateDocumentButton";
-import DeleteDocumentButton from "@/components/DeleteDocumentButton"; // 👈 Importa el botón
+import DeleteDocumentButton from "@/components/DeleteDocumentButton"; 
+import ChangeEmployeeStatusButton from "@/components/ChangeEmployeeStatusButton";
 import Link from "next/link";
 
 export default async function Employee({ params }: { params: Promise<{ id: string }> }) {
@@ -34,17 +35,30 @@ export default async function Employee({ params }: { params: Promise<{ id: strin
         {/* Información del empleado */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{employee.name}</h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">{employee.position || "Sin puesto asignado"}</p>
-            </div>
-            <Link
-              href="/dashboard/employees"
-              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold py-2 px-4 rounded-lg text-sm"
-            >
-              ← Volver a empleados
-            </Link>
-          </div>
+  <div>
+    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      {employee.name}
+    </h1>
+
+    <p className="text-gray-500 dark:text-gray-400 mt-1">
+      {employee.position || "Sin puesto asignado"}
+    </p>
+      <div className="mt-3">
+      <ChangeEmployeeStatusButton
+        employeeId={employee.id}
+        currentStatus={employee.status}
+      />
+    </div>
+    
+  </div>
+
+  <Link
+    href="/dashboard/employees"
+    className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold py-2 px-4 rounded-lg text-sm"
+  >
+    ← Volver a empleados
+  </Link>
+</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <p className="font-semibold">Email</p>
@@ -62,6 +76,8 @@ export default async function Employee({ params }: { params: Promise<{ id: strin
               <p className="font-semibold">Empresa</p>
               <p>{employee.company.name}</p>
             </div>
+
+            
           </div>
         </div>
 

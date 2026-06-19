@@ -117,6 +117,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    await prisma.activityLog.create({
+      data: {
+        action: "UPLOAD_DOCUMENT",
+        entityType: "DOCUMENT",
+        entityId: employee.id,
+        description: `Documento ${finalName} subido a ${employee.name}`,
+        companyId: employee.companyId,
+      },
+    })
+
     return Response.json({ success: true })
   } catch (error) {
     console.error(error)

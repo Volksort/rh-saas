@@ -22,11 +22,21 @@ export async function POST(request: Request) {
         phone: phone?.trim() || null,
         position: position?.trim() || "Sin puesto",
         hireDate: new Date(),
-        status: "ACTIVE",   // si tu esquema lo pide; si no, omítelo
+        status: "ACTIVE", 
         companyId,
         departmentId,
       },
     });
+
+    await prisma.activityLog.create({
+    data: {
+      action: "CREATE_EMPLOYEE",
+      entityType: "EMPLOYEE",
+      entityId: newEmployee.id,
+      description: `Empleado ${newEmployee.name} creado`,
+      companyId,
+    },
+  })
 
     return NextResponse.json(newEmployee, { status: 201 });
   } catch (error) {

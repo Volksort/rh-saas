@@ -41,6 +41,12 @@ export default async function CompanyPage() {
             >
               Ver empleados
             </Link>
+            <Link
+              href="/dashboard/activity"
+              className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded transition-colors"
+            >
+              ver registros de actividad
+            </Link>
             <CreateDepartmentModal companyId={companyId} />
           </div>
         </div>
@@ -72,6 +78,7 @@ export default async function CompanyPage() {
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   No hay empleados aún.
                 </div>
+                
               ) : (
                 company.employees.map((emp: any) => (
                   <div

@@ -30,5 +30,15 @@ export async function POST(req:Request){
     }
   })
 
+  await prisma.activityLog.create({
+      data: {
+        action: "CREATE_USER",
+        entityType: "USER",
+        entityId: user.id,
+        description: `Usuario ${user.name} creado`,
+        companyId: user.companyId,
+      },
+    })
+
   return Response.json(user)
 }

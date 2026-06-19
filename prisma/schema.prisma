@@ -4,135 +4,195 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url = env("DATABASE_URL")
 }
 
-model Company {
-
-  id              String       @id @default(cuid())
-
-  name            String
-
-  createdAt       DateTime     @default(now())
-
-  // GOOGLE DRIVE ROOT FOLDER
-
-  driveFolderId   String?
-  driveFolderUrl  String?
-
-  departments     Department[]
-  employees       Employee[]
-  users           User[]
-}
-
-model User {
-
-  id              String       @id @default(cuid())
-
-  name            String
-
-  email           String       @unique
-
-  password        String
-
-  companyId       String
-
-  role            Role
-
-  company         Company      @relation(fields: [companyId], references: [id])
-}
-
-model Department {
-
-  id              String       @id @default(cuid())
-
-  name            String
-
-  companyId       String
-
-  company         Company      @relation(fields: [companyId], references: [id])
-
-  employees       Employee[]
-}
-
-model Employee {
-
-  id              String       @id @default(cuid())
-
-  name            String
-
-  email           String?
-
-  phone           String?
-
-  position        String
-
-  hireDate        DateTime
-
-  status          String
-
-  // CARPETA PERSONAL DRIVE
-
-  driveFolderId   String?
-
-  driveFolderUrl  String?
-
-  companyId       String
-
-  departmentId    String?
-
-  documents       Document[]
-
-  company         Company      @relation(fields: [companyId], references: [id])
-
-  department      Department?  @relation(fields: [departmentId], references: [id])
-
-  incidents       Incident[]
-}
-
-model Incident {
-
-  id              String       @id @default(cuid())
-
-  type            String
-
-  description     String
-
-  date            DateTime     @default(now())
-
-  employeeId      String
-
-  employee        Employee     @relation(fields: [employeeId], references: [id])
-}
-
-model Document {
-
-  id              String    @id @default(cuid())
-
-  name            String
-
-  type            String?
-
-  uploadedAt      DateTime?
-
-  employeeId      String
-
-  employee        Employee  @relation(fields: [employeeId], references: [id])
-
-  // ARCHIVO
-
-  driveFileId     String?
-
-  driveUrl        String?
-
-  fileName        String?
-
-  uploaded        Boolean   @default(false)
-
-  createdAt       DateTime  @default(now())
-}
 enum Role {
   ADMIN
   COMPANY_ADMIN
   USER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum VacationType {
+  EARNED
+  TAKEN
+  ADVANCE
+  ADJUSTMENT
+}
+
+model Company {
+  id String @id @default(cuid())
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  driveFolderId String?
+
+  driveFolderUrl String?
+
+  departments Department[]
+
+  employees Employee[]
+
+  users User[]
+
+  activityLogs ActivityLog[]
+}
+
+model User {
+  id String @id @default(cuid())
+
+  name String
+
+  email String @unique
+
+  password String
+
+  companyId String
+
+  role Role
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+model Department {
+  id String @id @default(cuid())
+
+  name String
+
+  companyId String
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  employees Employee[]
+}
+
+model Employee {
+  id String @id @default(cuid())
+
+  name String
+
+  email String?
+
+  phone String?
+
+  position String
+
+  hireDate DateTime
+
+  status EmployeeStatus @default(ACTIVE)
+
+  driveFolderId String?
+
+  driveFolderUrl String?
+
+  companyId String
+
+  departmentId String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @default(now()) @updatedAt
+
+  documents Document[]
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  incidents Incident[]
+
+  vacations VacationMovement[]
+
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([status])
+}
+
+model Incident {
+  id String @id @default(cuid())
+
+  type String
+
+  description String
+
+  date DateTime @default(now())
+
+  employeeId String
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model Document {
+  id String @id @default(cuid())
+
+  name String
+
+  type String?
+
+  uploadedAt DateTime?
+
+  employeeId String
+
+  driveFileId String?
+
+  driveUrl String?
+
+  fileName String?
+
+  uploaded Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model VacationMovement {
+  id String @id @default(cuid())
+
+  employeeId String
+
+  days Int
+
+  type VacationType
+
+  reason String?
+
+  createdAt DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id String @id @default(cuid())
+
+  companyId String
+
+  action String
+
+  entityType String
+
+  entityId String?
+
+  description String
+
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  userId      String?
+  userName    String?
+  userEmail   String?
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([action])
 }
