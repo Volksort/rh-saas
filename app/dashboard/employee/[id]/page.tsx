@@ -4,6 +4,7 @@ import UploadDocument from "@/components/UploadDocument";
 import UpdateDocumentButton from "@/components/UpdateDocumentButton";
 import DeleteDocumentButton from "@/components/DeleteDocumentButton"; 
 import ChangeEmployeeStatusButton from "@/components/ChangeEmployeeStatusButton";
+import AddVacationModal from "@/components/AddVacationModal"
 import Link from "next/link";
 
 export default async function Employee({ params }: { params: Promise<{ id: string }> }) {
@@ -76,6 +77,9 @@ export default async function Employee({ params }: { params: Promise<{ id: strin
               <p className="font-semibold">Empresa</p>
               <p>{employee.company.name}</p>
             </div>
+            <div className="mt-6">
+              <AddVacationModal employeeId={employee.id} />
+            </div>
 
             
           </div>
@@ -146,6 +150,12 @@ export default async function Employee({ params }: { params: Promise<{ id: strin
                 )}
               </div>
             </div>
+            <Link
+              href={`/dashboard/vacations/${employee.id}`}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Gestionar vacaciones
+            </Link>
           </div>
 
           <div className="mt-10">

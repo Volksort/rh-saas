@@ -24,6 +24,12 @@ enum VacationType {
   ADJUSTMENT
 }
 
+enum VacationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Company {
   id String @id @default(cuid())
 
@@ -163,6 +169,14 @@ model VacationMovement {
 
   reason String?
 
+  status VacationStatus @default(APPROVED)
+
+  startDate DateTime?
+
+  endDate DateTime?
+
+  approvedBy String?
+
   createdAt DateTime @default(now())
 
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -188,9 +202,9 @@ model ActivityLog {
 
   company Company @relation(fields: [companyId], references: [id])
 
-  userId      String?
-  userName    String?
-  userEmail   String?
+  userId    String?
+  userName  String?
+  userEmail String?
 
   @@index([companyId])
   @@index([createdAt])
