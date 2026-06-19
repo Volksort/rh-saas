@@ -1,95 +1,75 @@
-"use client"
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
 
-import { useEffect, useState } from "react"
+export default async function ActivityPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id: companyId } = await params;
 
-export default function ActivityPage() {
-  const [logs, setLogs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState("")
+  const company = await prisma.company.findUnique({
+    where: {
+      id: companyId,
+    },
+  });
 
-  async function loadLogs() {
-    setLoading(true)
+  if (!company) notFound();
 
-    const params = new URLSearchParams()
-
-    if (userId) params.append("userId", userId)
-
-    const res = await fetch(`/api/activity-log?${params.toString()}`)
-    const data = await res.json()
-
-    setLogs(data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    loadLogs()
-  }, [userId])
-
-  function getIcon(action: string) {
-    switch (action) {
-      case "CREATE":
-        return "🟢"
-      case "DELETE":
-        return "🔴"
-      case "UPDATE":
-        return "🟡"
-      default:
-        return "⚪"
-    }
-  }
+  const logs = await prisma.activityLog.findMany({
+    where: {
+      companyId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 100,
+  });
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
 
-        <h1 className="text-3xl font-bold text-white mb-6">
-          Activity Logs
+        <h1 className="text-3xl font-bold mb-6 text-white">
+          Logs de {company.name}
         </h1>
 
-        {/* SOLO FILTRO OPCIONAL */}
-        <input
-          placeholder="Filtrar por User ID (opcional)"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          className="p-2 mb-4 rounded bg-gray-800 text-white w-full"
-        />
-
-        {/* LISTA */}
-        <div className="space-y-3">
-
-          {loading ? (
-            <p className="text-gray-400">Cargando logs...</p>
-          ) : logs.length === 0 ? (
-            <p className="text-gray-400">No hay actividad aún</p>
-          ) : (
-            logs.map((log) => (
+        {logs.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
+            No hay registros
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {logs.map((log) => (
               <div
                 key={log.id}
-                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow flex justify-between"
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow"
               >
-                <div className="flex gap-3">
-                  <div className="text-xl">{getIcon(log.action)}</div>
+                <p className="font-semibold">
+                  {log.description}
+                </p>
 
-                  <div>
-                    <p className="text-white font-semibold">
-                      {log.description}
-                    </p>
+                <p className="text-sm text-gray-500">
+                  Usuario: {log.userName || "Sistema"}
+                </p>
 
-                    <p className="text-sm text-gray-400">
-                      {log.userName ?? "Sistema"} · {log.entityType}
-                    </p>
-                  </div>
-                </div>
+                <p className="text-sm text-gray-500">
+                  Acción: {log.action}
+                </p>
 
-                <div className="text-xs text-gray-400">
+                <p className="text-sm text-gray-500">
+                  Tipo: {log.entityType}
+                </p>
+
+                <p className="text-xs text-gray-400 mt-2">
                   {new Date(log.createdAt).toLocaleString()}
-                </div>
+                </p>
               </div>
-            ))
-          )}
+            ))}
+          </div>
+        )}
 
-        </div>
       </div>
     </div>
-  )
+  );
 }
