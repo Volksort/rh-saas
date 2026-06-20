@@ -2,7 +2,9 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { signOut } from "next-auth/react"
+import { toast } from "sonner"
 
 import {
   LayoutDashboard,
@@ -28,6 +30,35 @@ export default function DashboardShell({
   const [collapsed, setCollapsed] = useState(false)
 
   const role = session.user.role
+
+  useEffect(() => {
+    const homePaths = [
+      "/dashboard",
+      "/dashboard/company",
+      "/dashboard/companies",
+    ]
+
+    const isHomePath = homePaths.includes(pathname)
+
+    if (!isHomePath) return
+
+    window.history.pushState(null, "", window.location.href)
+
+    const handleBackButton = () => {
+      window.history.pushState(null, "", window.location.href)
+
+      toast.warning("Estás en la página principal", {
+        description: "Usa el botón Cerrar sesión si deseas salir del sistema.",
+        duration: 5000,
+      })
+    }
+
+    window.addEventListener("popstate", handleBackButton)
+
+    return () => {
+      window.removeEventListener("popstate", handleBackButton)
+    }
+  }, [pathname])
 
   const whatsappUrl =
     "https://wa.me/525655185966?text=Hola,%20necesito%20ayuda%20con%20RH%20SaaS"
@@ -76,13 +107,11 @@ export default function DashboardShell({
         label: "Actividad",
         icon: ClipboardList,
       }
-
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex transition-colors duration-300">
-      {/* SIDEBAR */}
       <aside
         className={`
           relative
@@ -99,7 +128,6 @@ export default function DashboardShell({
           ${collapsed ? "w-24" : "w-72"}
         `}
       >
-        {/* HEADER SIDEBAR */}
         <div className="h-20 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           {!collapsed && (
             <div>
@@ -122,7 +150,6 @@ export default function DashboardShell({
           </button>
         </div>
 
-        {/* NAVEGACIÓN */}
         <nav className="p-4 space-y-2">
           {links.map((link) => {
             const Icon = link.icon
@@ -157,7 +184,6 @@ export default function DashboardShell({
           })}
         </nav>
 
-        {/* FOOTER SIDEBAR */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-800 mt-auto space-y-3">
           <a
             href={whatsappUrl}
@@ -169,16 +195,33 @@ export default function DashboardShell({
             {!collapsed && <span>Ayuda</span>}
           </a>
 
-          <form action="/api/auth/signout" method="POST">
-            <button className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl transition font-medium">
-              <LogOut size={18} />
-              {!collapsed && <span>Cerrar sesión</span>}
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={() =>
+              toast.warning("¿Cerrar sesión?", {
+                description: "Tendrás que volver a iniciar sesión.",
+                action: {
+                  label: "Cerrar sesión",
+                  onClick: () =>
+                    signOut({
+                      callbackUrl: "/login",
+                    }),
+                },
+                cancel: {
+                  label: "Cancelar",
+                  onClick: () => {},
+                },
+                duration: 8000,
+              })
+            }
+            className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl transition font-medium"
+          >
+            <LogOut size={18} />
+            {!collapsed && <span>Cerrar sesión</span>}
+          </button>
         </div>
       </aside>
 
-      {/* MAIN */}
       <main className="flex-1 flex flex-col">
         <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 px-8 py-5 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -226,7 +269,6 @@ export default function DashboardShell({
         <div className="flex-1">{children}</div>
       </main>
 
-      {/* BOTÓN FLOTANTE WHATSAPP */}
       <a
         href={whatsappUrl}
         target="_blank"

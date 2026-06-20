@@ -1,100 +1,135 @@
-'use client'
+"use client"
 
-import { signIn } from 'next-auth/react'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { signIn, signOut } from "next-auth/react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+
+const MAX_ATTEMPTS = 5
+const LOCK_TIME = 5 * 60 * 1000
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
 
 export default function LoginPage() {
-  // Estados para login
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const router = useRouter()
 
-  // Estados para registro
-  const [showRegister, setShowRegister] = useState(false)
-  const [regName, setRegName] = useState('')
-  const [regEmail, setRegEmail] = useState('')
-  const [regPassword, setRegPassword] = useState('')
-  const [regCompanyId, setRegCompanyId] = useState('')
-  const [regLoading, setRegLoading] = useState(false)
-  const [regError, setRegError] = useState('')
-  const [regSuccess, setRegSuccess] = useState('')
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(null)
+
+  useEffect(() => {
+    const logoutIfSessionExists = async () => {
+      const res = await fetch("/api/auth/session", {
+        cache: "no-store",
+      })
+
+      const session = await res.json()
+
+      if (session?.user) {
+        await signOut({
+          redirect: false,
+        })
+      }
+    }
+
+    logoutIfSessionExists()
+
+    const storedBlock = localStorage.getItem("loginBlockedUntil")
+
+    if (storedBlock) {
+      const time = Number(storedBlock)
+
+      if (time > Date.now()) {
+        setBlockedUntil(time)
+      } else {
+        localStorage.removeItem("loginBlockedUntil")
+        localStorage.removeItem("loginAttempts")
+      }
+    }
+  }, [])
+
+  const handleFailedAttempt = () => {
+    const attempts = Number(localStorage.getItem("loginAttempts") || "0") + 1
+
+    localStorage.setItem("loginAttempts", String(attempts))
+
+    if (attempts >= MAX_ATTEMPTS) {
+      const blockUntil = Date.now() + LOCK_TIME
+
+      localStorage.setItem("loginBlockedUntil", String(blockUntil))
+      setBlockedUntil(blockUntil)
+      setError("Demasiados intentos. Intenta nuevamente en 5 minutos.")
+      return
+    }
+
+    setError(`Credenciales incorrectas. Intentos restantes: ${MAX_ATTEMPTS - attempts}`)
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError('')
+    setError("")
 
-    const res = await signIn('credentials', {
-      email,
-      password,
+    if (blockedUntil && blockedUntil > Date.now()) {
+      setError("Demasiados intentos. Intenta nuevamente más tarde.")
+      return
+    }
+
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanPassword = password.trim()
+
+    if (!isValidEmail(cleanEmail)) {
+      setError("Ingresa un correo válido.")
+      return
+    }
+
+    if (cleanPassword.length < 4) {
+      setError("La contraseña debe tener al menos 4 caracteres.")
+      return
+    }
+
+    setLoading(true)
+
+    const res = await signIn("credentials", {
+      email: cleanEmail,
+      password: cleanPassword,
       redirect: false,
     })
 
     if (res?.error) {
-      setError('Credenciales incorrectas')
+      handleFailedAttempt()
       setLoading(false)
       return
     }
 
-    const sessionRes = await fetch('/api/auth/session')
+    localStorage.removeItem("loginAttempts")
+    localStorage.removeItem("loginBlockedUntil")
+
+    const sessionRes = await fetch("/api/auth/session", {
+      cache: "no-store",
+    })
+
     const session = await sessionRes.json()
     const role = session?.user?.role
 
-    if (role === 'ADMIN') {
-      router.push('/dashboard/companies')
-    } else if (role === 'COMPANY_ADMIN') {
-      router.push('/dashboard/company')
+    if (role === "ADMIN") {
+      router.replace("/dashboard/companies")
+    } else if (role === "COMPANY_ADMIN") {
+      router.replace("/dashboard/company")
     } else {
-      router.push('/dashboard')
+      router.replace("/dashboard")
     }
 
     setLoading(false)
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setRegLoading(true)
-    setRegError('')
-    setRegSuccess('')
-
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: regName,
-          email: regEmail,
-          password: regPassword,
-          companyId: regCompanyId || undefined,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al registrar')
-
-      setRegSuccess('¡Usuario creado! Ya puedes iniciar sesión.')
-      setTimeout(() => {
-        setShowRegister(false)
-        setRegSuccess('')
-        setRegName('')
-        setRegEmail('')
-        setRegPassword('')
-        setRegCompanyId('')
-      }, 2000)
-    } catch (err: any) {
-      setRegError(err.message)
-    } finally {
-      setRegLoading(false)
-    }
-  }
+  const isBlocked = blockedUntil !== null && blockedUntil > Date.now()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-80 transition-colors duration-300">
-        {/* Logo - se adapta al tema */}
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-sm transition-colors duration-300">
         <div className="flex justify-center mb-6">
           <svg
             className="w-24 h-auto text-gray-800 dark:text-white"
@@ -108,107 +143,53 @@ export default function LoginPage() {
           </svg>
         </div>
 
-        {!showRegister ? (
-          <>
-            <h1 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-white">
-              Iniciar sesión
-            </h1>
-            <form onSubmit={handleLogin}>
-              <input
-                type="email"
-                className="w-full mb-3 p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <input
-                type="password"
-                className="w-full mb-4 p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              {error && (
-                <p className="text-red-600 dark:text-red-400 text-sm mb-2">{error}</p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white p-2 rounded disabled:opacity-50 transition-colors"
-              >
-                {loading ? 'Entrando...' : 'Login'}
-              </button>
-            </form>
-            <button
-              onClick={() => setShowRegister(true)}
-              className="w-full mt-3 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
-            >
-              ¿No tienes cuenta? Regístrate
-            </button>
-          </>
-        ) : (
-          <>
-            <h1 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-white">
-              Crear cuenta
-            </h1>
-            <form onSubmit={handleRegister}>
-              <input
-                type="text"
-                className="w-full mb-3 p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-                placeholder="Nombre completo"
-                value={regName}
-                onChange={(e) => setRegName(e.target.value)}
-                required
-              />
-              <input
-                type="email"
-                className="w-full mb-3 p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-                placeholder="Email"
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                required
-              />
-              <input
-                type="password"
-                className="w-full mb-3 p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-                placeholder="Contraseña"
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                required
-              />
-              <input
-                type="text"
-                className="w-full mb-3 p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-                placeholder="Company ID (opcional)"
-                value={regCompanyId}
-                onChange={(e) => setRegCompanyId(e.target.value)}
-              />
-              {regError && (
-                <p className="text-red-600 dark:text-red-400 text-sm mb-2">{regError}</p>
-              )}
-              {regSuccess && (
-                <p className="text-green-600 dark:text-green-400 text-sm mb-2">
-                  {regSuccess}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={regLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white p-2 rounded disabled:opacity-50 transition-colors"
-              >
-                {regLoading ? 'Registrando...' : 'Registrarse'}
-              </button>
-            </form>
-            <button
-              onClick={() => setShowRegister(false)}
-              className="w-full mt-3 text-sm text-gray-600 dark:text-gray-400 hover:underline"
-            >
-              Volver al login
-            </button>
-          </>
-        )}
+        <h1 className="text-2xl font-bold mb-2 text-center text-gray-900 dark:text-white">
+          Iniciar sesión
+        </h1>
+
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+          Acceso privado para empresas registradas
+        </p>
+
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            className="w-full mb-3 p-3 border rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
+            placeholder="Correo electrónico"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
+
+          <input
+            type="password"
+            className="w-full mb-4 p-3 border rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+
+          {error && (
+            <p className="text-red-600 dark:text-red-400 text-sm mb-3">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || isBlocked}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white p-3 rounded-xl disabled:opacity-50 transition-colors font-medium"
+          >
+            {loading ? "Entrando..." : isBlocked ? "Bloqueado temporalmente" : "Entrar"}
+          </button>
+        </form>
+
+        <p className="text-xs text-gray-400 text-center mt-5">
+          Si necesitas acceso, contacta al administrador del sistema.
+        </p>
       </div>
     </div>
   )
