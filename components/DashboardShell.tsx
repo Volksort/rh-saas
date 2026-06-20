@@ -1,28 +1,36 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 
 import {
   LayoutDashboard,
   Building2,
   Users,
+  CalendarDays,
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  MessageCircle,
 } from "lucide-react"
 
 export default function DashboardShell({
   children,
-  session
+  session,
 }: {
   children: React.ReactNode
   session: any
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
+
   const role = session.user.role
+
+  const whatsappUrl =
+    "https://wa.me/525655185966?text=Hola,%20necesito%20ayuda%20con%20RH%20SaaS"
 
   const links: {
     href: string
@@ -31,15 +39,44 @@ export default function DashboardShell({
   }[] = []
 
   if (role === "USER") {
-    links.push({ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard })
+    links.push({
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    })
   }
+
   if (role === "ADMIN") {
-    links.push({ href: "/dashboard/companies", label: "Empresas", icon: Building2 })
+    links.push({
+      href: "/dashboard/companies",
+      label: "Empresas",
+      icon: Building2,
+    })
   }
+
   if (role === "COMPANY_ADMIN") {
     links.push(
-      { href: "/dashboard/company", label: "Empresa", icon: Building2 },
-      { href: "/dashboard/employees", label: "Empleados", icon: Users }
+      {
+        href: "/dashboard/company",
+        label: "Empresa",
+        icon: Building2,
+      },
+      {
+        href: "/dashboard/employees",
+        label: "Empleados",
+        icon: Users,
+      },
+      {
+        href: "/dashboard/vacations",
+        label: "Vacaciones",
+        icon: CalendarDays,
+      },
+      {
+        href: "/dashboard/activity",
+        label: "Actividad",
+        icon: ClipboardList,
+      }
+
     )
   }
 
@@ -62,29 +99,35 @@ export default function DashboardShell({
           ${collapsed ? "w-24" : "w-72"}
         `}
       >
-        {/* HEADER */}
+        {/* HEADER SIDEBAR */}
         <div className="h-20 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           {!collapsed && (
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">
                 RH SaaS
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Panel administrativo</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Panel administrativo
+              </p>
             </div>
           )}
+
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            title={collapsed ? "Expandir menú" : "Contraer menú"}
           >
             {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
 
-        {/* NAVEGACIÓN - SIN flex-1 para que no empuje el footer hacia abajo */}
+        {/* NAVEGACIÓN */}
         <nav className="p-4 space-y-2">
           {links.map((link) => {
             const Icon = link.icon
             const active = pathname.startsWith(link.href)
+
             return (
               <Link
                 key={link.href}
@@ -114,8 +157,18 @@ export default function DashboardShell({
           })}
         </nav>
 
-        {/* FOOTER - ahora estará justo después del nav (más arriba) */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        {/* FOOTER SIDEBAR */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 mt-auto space-y-3">
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-2xl transition font-medium"
+          >
+            <MessageCircle size={18} />
+            {!collapsed && <span>Ayuda</span>}
+          </a>
+
           <form action="/api/auth/signout" method="POST">
             <button className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl transition font-medium">
               <LogOut size={18} />
@@ -128,13 +181,73 @@ export default function DashboardShell({
       {/* MAIN */}
       <main className="flex-1 flex flex-col">
         <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 px-8 py-5 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Bienvenido</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{session.user.name}</p>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="p-2 rounded-xl border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                title="Atrás"
+              >
+                <ChevronLeft size={20} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.history.forward()}
+                className="p-2 rounded-xl border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                title="Adelante"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                Bienvenido
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {session.user.name}
+              </p>
+            </div>
           </div>
+
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden md:flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl transition font-medium"
+          >
+            <MessageCircle size={18} />
+            Ayuda
+          </a>
         </header>
+
         <div className="flex-1">{children}</div>
       </main>
+
+      {/* BOTÓN FLOTANTE WHATSAPP */}
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="
+          fixed
+          bottom-6
+          right-6
+          bg-green-500
+          hover:bg-green-600
+          text-white
+          p-4
+          rounded-full
+          shadow-xl
+          z-50
+          md:hidden
+        "
+        title="Ayuda por WhatsApp"
+      >
+        <MessageCircle size={28} />
+      </a>
     </div>
   )
 }

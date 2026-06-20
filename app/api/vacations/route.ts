@@ -4,6 +4,42 @@ import { authOptions } from "@/lib/auth"
 
 const validTypes = ["EARNED", "TAKEN", "ADVANCE", "ADJUSTMENT"]
 
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+
+  if (!session?.user?.companyId) {
+    return Response.json({ error: "No autorizado" }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const employeeId = searchParams.get("employeeId")
+
+  const vacations = await prisma.vacationMovement.findMany({
+    where: {
+      ...(employeeId ? { employeeId } : {}),
+      employee: {
+        companyId: session.user.companyId,
+      },
+    },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          email: true,
+          status: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
+
+  return Response.json(vacations)
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
 
