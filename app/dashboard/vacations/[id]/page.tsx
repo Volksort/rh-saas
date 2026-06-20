@@ -9,34 +9,47 @@ export default async function EmployeeVacations({
   const { id } = await params
 
   const employee = await prisma.employee.findUnique({
-    where: { id },
-    include: {
-      vacations: true,
-      company: true,
+  where: { id },
+  include: {
+    vacations: {
+      orderBy: {
+        createdAt: "desc",
+      },
     },
-  })
+    company: true,
+  },
+})
 
   if (!employee) notFound()
 
-  const vacations = employee.vacations ?? []
+    const vacations = employee.vacations ?? []
 
-  const earned = vacations
-    .filter(v => v.type === "EARNED")
-    .reduce((a, b) => a + b.days, 0)
+    const approvedVacations = vacations.filter(v => v.status === "APPROVED")
 
-  const taken = vacations
-    .filter(v => v.type === "TAKEN")
-    .reduce((a, b) => a + b.days, 0)
+    const earned = approvedVacations
+      .filter(v => v.type === "EARNED")
+      .reduce((total, movement) => total + movement.days, 0)
 
-  const advance = vacations
-    .filter(v => v.type === "ADVANCE")
-    .reduce((a, b) => a + b.days, 0)
+    const taken = approvedVacations
+      .filter(v => v.type === "TAKEN")
+      .reduce((total, movement) => total + movement.days, 0)
 
-  const adjustment = vacations
-    .filter(v => v.type === "ADJUSTMENT")
-    .reduce((a, b) => a + b.days, 0)
+    const advance = approvedVacations
+      .filter(v => v.type === "ADVANCE")
+      .reduce((total, movement) => total + movement.days, 0)
 
-  const balance = earned - taken - advance + adjustment
+    const adjustment = approvedVacations
+      .filter(v => v.type === "ADJUSTMENT")
+      .reduce((total, movement) => total + movement.days, 0)
+
+    const balance = earned - taken - advance + adjustment
+
+    const typeLabels = {
+      EARNED: "Ganados",
+      TAKEN: "Tomados",
+      ADVANCE: "Adelanto",
+      ADJUSTMENT: "Ajuste",
+    }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
@@ -72,7 +85,7 @@ export default async function EmployeeVacations({
           {vacations.map(v => (
             <div key={v.id} className="bg-white dark:bg-gray-800 p-4 rounded">
               <p className="font-bold text-white">
-                {v.type} · {v.days} días
+                {typeLabels[v.type]} · {v.days} días
               </p>
               <p className="text-gray-400 text-sm">
                 {v.reason}

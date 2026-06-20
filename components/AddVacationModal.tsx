@@ -61,8 +61,10 @@ export default function AddVacationModal({
               onChange={(e) => setDays(Number(e.target.value))}
             />
 
+
             {/* TIPO */}
             <select
+              value={type}
               className="w-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded mb-3"
               onChange={(e) => setType(e.target.value)}
             >
